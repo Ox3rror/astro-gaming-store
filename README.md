@@ -13,7 +13,7 @@
 
 ### 1. Clone / Download
 ```bash
-git clone <your-repo-url>
+git clone <repo-url>
 cd astro_gaming
 ```
 
