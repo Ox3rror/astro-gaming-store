@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Astro Gaming Store{% endblock %}</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if session.user_id %}
+<!-- ── APP SHELL ──────────────────────────────────────────── -->
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">
+        <i class="bi bi-controller"></i>
+      </div>
+      <div>
+        <div class="brand-name">Astro</div>
+        <div class="brand-sub">Gaming Store</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('dashboard') }}"
+         class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-grid-1x2-fill nav-icon"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="{{ url_for('inventory') }}"
+         class="nav-item {% if request.endpoint in ['inventory','add_item','edit_item'] %}active{% endif %}">
+        <i class="bi bi-controller nav-icon"></i>
+        <span>Inventory</span>
+      </a>
+      <a href="{{ url_for('alerts') }}"
+         class="nav-item {% if request.endpoint == 'alerts' %}active{% endif %}">
+        <i class="bi bi-bell-fill nav-icon"></i>
+        <span>Alerts</span>
+        {% set alert_count = namespace(n=0) %}
+        {% if g_alert_count is defined %}
+          <span class="nav-badge">{{ g_alert_count }}</span>
+        {% endif %}
+      </a>
+      <a href="{{ url_for('reports') }}"
+         class="nav-item {% if request.endpoint == 'reports' %}active{% endif %}">
+        <i class="bi bi-bar-chart-fill nav-icon"></i>
+        <span>Reports</span>
+      </a>
+      <a href="#" class="nav-item text-muted" style="opacity:0.4;cursor:default;">
+        <i class="bi bi-gear-fill nav-icon"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sf-avatar"><i class="bi bi-person-circle"></i></div>
+      <div>
+        <div class="sf-user">{{ session.username }}</div>
+        <div class="sf-role">{{ session.role | title }}</div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="sf-logout" title="Sign out">
+        <i class="bi bi-box-arrow-right"></i>
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
+          <i class="bi bi-list"></i>
+        </button>
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+      </div>
+      <div class="topbar-right">
+        <span class="status-badge"><span class="status-dot"></span> System Online</span>
+        <!-- Theme Toggle -->
+        <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+          <span id="theme-icon">☀️</span>
+          <div class="toggle-track"><div class="toggle-thumb"></div></div>
+          <span id="theme-label">Light</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-area px-4 pt-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'danger' else ('warning' if category == 'warning' else 'success') }} alert-dismissible fade show" role="alert">
+              <i class="bi bi-{{ 'exclamation-triangle-fill' if category in ['danger','warning'] else 'check-circle-fill' }} me-2"></i>
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- PAGE BODY -->
+    <div class="page-body">
+      {% block content %}{% endblock %}
+    </div>
+
+  </main>
+</div>
+
+{% else %}
+<!-- ── AUTH PAGES (no sidebar) ────────────────────────────── -->
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

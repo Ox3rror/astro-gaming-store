@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Inventory — Astro Gaming Store{% endblock %}
+{% block page_title %}Inventory{% endblock %}
+
+{% block content %}
+<div class="content-inner">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <form method="GET" action="{{ url_for('inventory') }}" class="toolbar-form">
+      <div class="search-wrap">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" name="search" class="search-input"
+               placeholder="Search by title, SKU, platform..."
+               value="{{ search }}"/>
+      </div>
+      <select name="platform" class="filter-select">
+        <option value="">Platform ▾</option>
+        {% for p in platforms %}
+          <option value="{{ p }}" {% if platform == p %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+      <select name="genre" class="filter-select">
+        <option value="">Genre ▾</option>
+        {% for g in genres %}
+          <option value="{{ g }}" {% if genre == g %}selected{% endif %}>{{ g }}</option>
+        {% endfor %}
+      </select>
+      <select name="status" class="filter-select">
+        <option value="">Status ▾</option>
+        <option value="In Stock"     {% if status == 'In Stock'     %}selected{% endif %}>In Stock</option>
+        <option value="Low Stock"    {% if status == 'Low Stock'    %}selected{% endif %}>Low Stock</option>
+        <option value="Out of Stock" {% if status == 'Out of Stock' %}selected{% endif %}>Out of Stock</option>
+      </select>
+      <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
+      {% if search or platform or genre or status %}
+        <a href="{{ url_for('inventory') }}" class="btn btn-link btn-sm text-muted">Clear</a>
+      {% endif %}
+    </form>
+    {% if session.role == 'admin' %}
+      <a href="{{ url_for('add_item') }}" class="btn-primary-action">
+        <i class="bi bi-plus-lg me-1"></i> Add New Item
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Title</th>
+          <th>Platform</th>
+          <th>Genre</th>
+          <th class="text-center">Qty</th>
+          <th>Price</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        {% set qty_color = 'text-red fw-600' if p.quantity == 0 else ('text-amber fw-600' if p.quantity <= p.reorder_threshold else 'text-green fw-600') %}
+        <tr>
+          <td class="text-muted text-sm">{{ p.sku }}</td>
+          <td class="fw-600 {% if p.quantity == 0 %}text-red{% endif %}">{{ p.title }}</td>
+          <td class="text-sub">{{ p.platform }}</td>
+          <td class="text-muted">{{ p.genre }}</td>
+          <td class="text-center {{ qty_color }}">{{ p.quantity }}</td>
+          <td class="text-green fw-600">${{ "%.2f"|format(p.price) }}</td>
+          <td>
+            {% if p.quantity == 0 %}
+              <span class="badge-status badge-red">Out of Stock</span>
+            {% elif p.quantity <= p.reorder_threshold %}
+              <span class="badge-status badge-amber">Low Stock</span>
+            {% else %}
+              <span class="badge-status badge-green">In Stock</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if session.role == 'admin' %}
+              <a href="{{ url_for('edit_item', item_id=p.id) }}" class="action-btn" title="Edit">
+                <i class="bi bi-pencil-fill"></i>
+              </a>
+              <form method="POST" action="{{ url_for('delete_item', item_id=p.id) }}"
+                    style="display:inline;"
+                    onsubmit="return confirm('Delete {{ p.title }}? This cannot be undone.')">
+                <button type="submit" class="action-btn action-btn-red" title="Delete">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              </form>
+            {% else %}
+              <span class="text-muted">···</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No products found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-row">
+    <span class="pag-info">Showing {{ ((page-1)*per_page)+1 }}–{{ [page*per_page, total]|sort|first }} of {{ total }} items</span>
+    <div class="pag-btns">
+      {% if page > 1 %}
+        <a href="{{ url_for('inventory', page=page-1, search=search, platform=platform, genre=genre, status=status) }}" class="pag-btn">← Prev</a>
+      {% else %}
+        <span class="pag-btn pag-disabled">← Prev</span>
+      {% endif %}
+
+      {% for p in range(1, total_pages+1) %}
+        <a href="{{ url_for('inventory', page=p, search=search, platform=platform, genre=genre, status=status) }}"
+           class="pag-btn {% if p == page %}pag-active{% endif %}">{{ p }}</a>
+      {% endfor %}
+
+      {% if page < total_pages %}
+        <a href="{{ url_for('inventory', page=page+1, search=search, platform=platform, genre=genre, status=status) }}" class="pag-btn">Next →</a>
+      {% else %}
+        <span class="pag-btn pag-disabled">Next →</span>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

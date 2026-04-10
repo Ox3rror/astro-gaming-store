@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'Add' }} Item — Astro Gaming Store{% endblock %}
+{% block page_title %}{{ 'Edit Item' if mode == 'edit' else 'Add New Item' }}{% endblock %}
+
+{% block content %}
+<div class="content-inner">
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb-bar">
+    <a href="{{ url_for('inventory') }}" class="breadcrumb-link">
+      <i class="bi bi-arrow-left me-1"></i> Back to Inventory
+    </a>
+    {% if mode == 'edit' and item %}
+      <span class="breadcrumb-sep">·</span>
+      <span class="breadcrumb-cur">{{ item.title }} · SKU {{ item.sku }}</span>
+    {% endif %}
+  </div>
+
+  <!-- Two-panel form -->
+  <form method="POST" action="{{ url_for('edit_item', item_id=item.id) if mode == 'edit' else url_for('add_item') }}">
+    <div class="form-panels">
+
+      <!-- LEFT: Product Details -->
+      <div class="form-panel">
+        <div class="form-panel-head">
+          <div class="form-panel-bar" style="background:linear-gradient(180deg,#0891B2,#2563EB);"></div>
+          <span class="form-panel-title">PRODUCT DETAILS</span>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Title <span class="req">*</span></label>
+          <input type="text" name="title" class="form-input"
+                 value="{{ item.title if item else '' }}" required placeholder="e.g. God of War Ragnarok"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">SKU <span class="req">*</span></label>
+          <input type="text" name="sku" class="form-input"
+                 value="{{ item.sku if item else '' }}" required placeholder="e.g. GW-001"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Platform <span class="req">*</span></label>
+          <select name="platform" class="form-input" required>
+            <option value="">Select platform…</option>
+            {% for pl in ['PS5','Xbox','Switch','PC','PS4','Xbox 360'] %}
+              <option value="{{ pl }}" {% if item and item.platform == pl %}selected{% endif %}>{{ pl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Genre</label>
+          <select name="genre" class="form-input">
+            <option value="">Select genre…</option>
+            {% for g in ['Action','Adventure','RPG','FPS','Sports','Racing','Sandbox','Horror','Simulation','Strategy'] %}
+              <option value="{{ g }}" {% if item and item.genre == g %}selected{% endif %}>{{ g }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Category</label>
+          <select name="category" class="form-input">
+            {% for cat in ['Full Game','DLC','Bundle','Accessory','Pre-order'] %}
+              <option value="{{ cat }}" {% if item and item.category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- RIGHT: Stock & Pricing + Actions -->
+      <div class="form-right">
+
+        <!-- Stock & Pricing -->
+        <div class="form-panel">
+          <div class="form-panel-head">
+            <div class="form-panel-bar" style="background:linear-gradient(180deg,#16A34A,#0891B2);"></div>
+            <span class="form-panel-title">STOCK &amp; PRICING</span>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">Quantity <span class="req">*</span></label>
+            <input type="number" name="quantity" class="form-input" min="0"
+                   value="{{ item.quantity if item else 0 }}" required/>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Price (USD) <span class="req">*</span></label>
+            <div class="input-prefix-wrap">
+              <span class="input-prefix">$</span>
+              <input type="number" name="price" step="0.01" min="0" class="form-input form-input-prefixed"
+                     value="{{ '%.2f'|format(item.price) if item else '0.00' }}" required/>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Reorder Threshold <span class="req">*</span></label>
+            <input type="number" name="reorder_threshold" class="form-input" min="0"
+                   value="{{ item.reorder_threshold if item else 5 }}" required/>
+          </div>
+          <div class="warn-box">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Alert fires when qty falls at or below threshold
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-panel actions-panel">
+          <div class="actions-row">
+            <button type="submit" class="btn-primary-action">
+              <i class="bi bi-floppy-fill me-1"></i> Save Changes
+            </button>
+            <a href="{{ url_for('inventory') }}" class="btn-cancel">Cancel</a>
+          </div>
+          <p class="actions-hint">* Required fields · Errors shown inline</p>
+
+          {% if mode == 'edit' and item %}
+          <!-- Danger Zone -->
+          <div class="danger-section">
+            <div class="danger-label">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i> Danger Zone
+            </div>
+            <div class="danger-box">
+              <div>
+                <div class="danger-title">Delete this item</div>
+                <div class="danger-sub">This action cannot be undone</div>
+              </div>
+              <form method="POST" action="{{ url_for('delete_item', item_id=item.id) }}"
+                    onsubmit="return confirm('Permanently delete {{ item.title }}?')">
+                <button type="submit" class="btn-danger-delete">
+                  <i class="bi bi-trash-fill me-1"></i> Delete Item
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+      </div><!-- /form-right -->
+    </div><!-- /form-panels -->
+  </form>
+
+</div>
+{% endblock %}

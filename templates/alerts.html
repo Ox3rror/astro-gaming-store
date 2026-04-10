@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Low-Stock Alerts — Astro Gaming Store{% endblock %}
+{% block page_title %}Low-Stock Alerts{% endblock %}
+
+{% block content %}
+<div class="content-inner">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="filter-pills">
+      <a href="{{ url_for('alerts', tab='all') }}"
+         class="filter-pill {% if tab == 'all' %}pill-active-blue{% endif %}">
+        <span class="pill-dot" style="background:#2563EB;"></span>
+        All Alerts ({{ all_count }})
+      </a>
+      <a href="{{ url_for('alerts', tab='out') }}"
+         class="filter-pill {% if tab == 'out' %}pill-active-red{% endif %}">
+        <span class="pill-dot" style="background:#DC2626;"></span>
+        Out of Stock ({{ out_count }})
+      </a>
+      <a href="{{ url_for('alerts', tab='low') }}"
+         class="filter-pill {% if tab == 'low' %}pill-active-amber{% endif %}">
+        <span class="pill-dot" style="background:#D97706;"></span>
+        Low Stock ({{ low_count }})
+      </a>
+    </div>
+    <a href="{{ url_for('export_alerts_csv') }}" class="btn-secondary-action">
+      <i class="bi bi-download me-1"></i> Export CSV
+    </a>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:40px;">#</th>
+          <th>Title</th>
+          <th>Platform</th>
+          <th class="text-center">Qty</th>
+          <th class="text-center">Threshold</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr class="{% if item.quantity == 0 %}row-out{% endif %}">
+          <td class="text-muted">{{ loop.index }}</td>
+          <td class="fw-600 {% if item.quantity == 0 %}text-red{% endif %}">{{ item.title }}</td>
+          <td class="text-sub">{{ item.platform }}</td>
+          <td class="text-center fw-600 {% if item.quantity == 0 %}text-red{% else %}text-amber{% endif %}">
+            {{ item.quantity }}
+          </td>
+          <td class="text-center text-muted">{{ item.reorder_threshold }}</td>
+          <td>
+            {% if item.quantity == 0 %}
+              <span class="badge-status badge-red">Out of Stock</span>
+            {% else %}
+              <span class="badge-status badge-amber">Low Stock</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if item.quantity == 0 %}
+              <a href="{{ url_for('edit_item', item_id=item.id) }}" class="btn-reorder btn-reorder-red">Reorder</a>
+            {% else %}
+              <a href="{{ url_for('edit_item', item_id=item.id) }}" class="btn-reorder btn-reorder-amber">Reorder</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center py-5">
+            <i class="bi bi-check-circle-fill text-success me-2" style="font-size:1.5rem;"></i>
+            <div class="text-muted mt-1">All products are above their reorder thresholds.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

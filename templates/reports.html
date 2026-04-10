@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Reports — Astro Gaming Store{% endblock %}
+{% block page_title %}Reports &amp; Analytics{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="content-inner">
+
+  <!-- Controls -->
+  <div class="toolbar" style="margin-bottom:16px;">
+    <div style="display:flex;gap:8px;align-items:center;">
+      <select class="filter-select"><option>Report Type ▾</option><option>Sales Summary</option><option>Top Sellers</option></select>
+      <select class="filter-select"><option>Date Range ▾</option><option>Last 7 days</option><option>This month</option></select>
+      <select class="filter-select"><option>Platform ▾</option><option>PS5</option><option>Xbox</option><option>Switch</option><option>PC</option></select>
+      <button class="btn-primary-action">Generate</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="{{ url_for('export_reports_csv') }}" class="btn-secondary-action">
+        <i class="bi bi-filetype-csv me-1"></i> Export CSV
+      </a>
+      <button class="btn-outline-action" onclick="window.print()">
+        <i class="bi bi-filetype-pdf me-1"></i> Export PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Bar Chart -->
+  <div class="chart-card" style="margin-bottom:16px;">
+    <div class="chart-head">
+      <span class="panel-title">Daily Revenue — Mar 1–7</span>
+    </div>
+    <div class="chart-body">
+      <canvas id="revenueChart" height="90"></canvas>
+    </div>
+    <div class="chart-footer">
+      <span class="text-green fw-600">Total: ${{ "%.2f"|format(total_revenue) }}</span>
+      <span class="text-muted">Avg / day: ${{ "%.2f"|format(avg_per_day) }}</span>
+    </div>
+  </div>
+
+  <!-- Top Sellers -->
+  <div class="table-card">
+    <div class="panel-head">
+      <span class="panel-title">Top Sellers This Week</span>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:60px;">Rank</th>
+          <th>Title</th>
+          <th>Platform</th>
+          <th class="text-center">Units</th>
+          <th>Revenue</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set medals = ['🥇','🥈','🥉','🏅','🎖️'] %}
+        {% for s in top_sellers %}
+        <tr>
+          <td style="font-size:1.2rem;line-height:1;">{{ medals[loop.index0] if loop.index0 < 5 else loop.index }}</td>
+          <td class="fw-600">{{ s.title }}</td>
+          <td class="text-sub">{{ s.platform }}</td>
+          <td class="text-center text-blue fw-600">{{ s.units }}</td>
+          <td class="text-green fw-600">${{ "%.2f"|format(s.revenue) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No sales data available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="height:10px;"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const days   = {{ days | tojson }};
+const totals = {{ totals | tojson }};
+const colors = ['#2563EB','#7C3AED','#DB2777','#0891B2','#16A34A','#D97706','#DC2626'];
+
+const ctx = document.getElementById('revenueChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: days.map((d, i) => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i] || d),
+    datasets: [{
+      data: totals,
+      backgroundColor: colors.slice(0, totals.length),
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ' $' + ctx.parsed.y.toFixed(2)
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { family: 'Inter', size: 11 }, color: '#8896A5' }
+      },
+      y: {
+        grid: { color: 'rgba(0,0,0,0.05)' },
+        ticks: {
+          font: { family: 'Inter', size: 11 }, color: '#8896A5',
+          callback: v => '$' + v
+        }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Astro Gaming Store{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="content-inner">
+
+  <!-- Stat Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#EFF4FF;">
+        <i class="bi bi-controller" style="color:#2563EB;"></i>
+      </div>
+      <div class="stat-body">
+        <div class="stat-label">TOTAL PRODUCTS</div>
+        <div class="stat-val" style="color:#2563EB;">{{ total_products }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FFFBEB;">
+        <i class="bi bi-exclamation-triangle-fill" style="color:#D97706;"></i>
+      </div>
+      <div class="stat-body">
+        <div class="stat-label">LOW STOCK</div>
+        <div class="stat-val" style="color:#D97706;">{{ low_stock_count }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#F0FDF4;">
+        <i class="bi bi-credit-card-fill" style="color:#16A34A;"></i>
+      </div>
+      <div class="stat-body">
+        <div class="stat-label">TODAY'S SALES</div>
+        <div class="stat-val" style="color:#16A34A;">{{ todays_sales }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#EEF2FF;">
+        <i class="bi bi-bar-chart-fill" style="color:#4F46E5;"></i>
+      </div>
+      <div class="stat-body">
+        <div class="stat-label">REVENUE</div>
+        <div class="stat-val" style="color:#4F46E5;">${{ "%.2f"|format(revenue) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two-column panels -->
+  <div class="dash-panels">
+
+    <!-- Recent Sales -->
+    <div class="panel-card">
+      <div class="panel-head">
+        <span class="panel-title">Recent Sales</span>
+        <a href="{{ url_for('inventory') }}" class="panel-link">View all →</a>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Platform</th>
+            <th>Price</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in recent_sales %}
+          <tr>
+            <td>{{ s.title }}</td>
+            <td class="text-sub">{{ s.platform }}</td>
+            <td class="text-green fw-600">${{ "%.2f"|format(s.sale_price) }}</td>
+            <td class="text-muted">{{ s.sale_time[11:16] }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-center text-muted py-3">No sales recorded today.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Stock Alerts -->
+    <div class="panel-card">
+      <div class="panel-head">
+        <span class="panel-title">Stock Alerts</span>
+        <a href="{{ url_for('alerts') }}" class="panel-link">Manage →</a>
+      </div>
+      {% for a in alerts %}
+      <div class="alert-row">
+        <div>
+          <div class="alert-row-name">{{ a.title }}</div>
+          <div class="alert-row-sub">{{ a.platform }} · Qty: {{ a.quantity }}</div>
+        </div>
+        {% if a.quantity == 0 %}
+          <span class="badge-status badge-red">Out of Stock</span>
+        {% else %}
+          <span class="badge-status badge-amber">Low Stock</span>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-check-circle-fill text-success me-1"></i> All products are well stocked.
+      </div>
+      {% endfor %}
+    </div>
+
+  </div><!-- /dash-panels -->
+</div>
+{% endblock %}
