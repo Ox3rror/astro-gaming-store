@@ -19,7 +19,7 @@ cd astro_gaming
 
 ### 2. Create a virtual environment
 ```bash
-python -m venv venv
+python3 -m venv venv
 
 # Windows
 venv\Scripts\activate
@@ -35,7 +35,7 @@ pip install -r requirements.txt
 
 ### 4. Run the app
 ```bash
-python app.py
+python3 app.py
 ```
 
 Open your browser at: **http://localhost:5000**
