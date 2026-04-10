@@ -19,7 +19,9 @@ cd astro_gaming
 
 ### 2. Create a virtual environment
 ```bash
-python3 -m venv venv
+python -m venv venv
+python3 -m venv venv (macos)
+
 
 # Windows
 venv\Scripts\activate
@@ -35,7 +37,9 @@ pip install -r requirements.txt
 
 ### 4. Run the app
 ```bash
-python3 app.py
+python app.py
+python3 app.py (macos)
+
 ```
 
 Open your browser at: **http://localhost:5000**
@@ -89,9 +93,5 @@ astro_gaming/
 | Alerts | Filter tabs (All/Out/Low), CSV export, Reorder buttons |
 | Reports | Colorful bar chart, top sellers table, CSV export |
 
----
 
-## Notes
-- The database is seeded with 12 sample products and 7 days of sales data automatically on first run.
-- To reset the database, delete `instance/astro.db` and restart the app.
-- Dark/light mode preference is saved in `localStorage`.
+
