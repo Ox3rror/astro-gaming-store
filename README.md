@@ -46,8 +46,8 @@ Open your browser at: **http://localhost:5000**
 
 | Role    | Username       | Password    |
 |---------|----------------|-------------|
-| Admin   | `admin_user`   | `admin123`  |
-| Cashier | `cashier_user` | `cashier123`|
+| Admin   | ``   | ``  |
+| Cashier | `` | ``|
 
 - **Admin** — full access (add, edit, delete products)
 - **Cashier** — read-only access (view inventory, alerts, dashboard)
