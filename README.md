@@ -1,5 +1,5 @@
 # Astro Gaming Store — Inventory Management System
-**CIS 5800 · Deliverable #2**
+
 
 ## Tech Stack
 - **Backend:** Python · Flask
