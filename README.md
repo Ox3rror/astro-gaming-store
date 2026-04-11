@@ -19,7 +19,7 @@ cd astro_gaming
 
 ### 2. Create a virtual environment
 ```bash
-python -m venv venv
+python3 -m venv venv
 
 # Windows
 venv\Scripts\activate
@@ -38,7 +38,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open your browser at: **http://localhost:5000**
+Open your browser at: **http://localhost:8000**
 
 ---
 
@@ -91,7 +91,3 @@ astro_gaming/
 
 ---
 
-## Notes
-- The database is seeded with 12 sample products and 7 days of sales data automatically on first run.
-- To reset the database, delete `instance/astro.db` and restart the app.
-- Dark/light mode preference is saved in `localStorage`.

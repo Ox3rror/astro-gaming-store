@@ -59,12 +59,12 @@ def init_db():
 
     # ── SEED DATA (only if tables are empty) ───────────────────
     if not c.execute("SELECT 1 FROM users LIMIT 1").fetchone():
-        # Passwords stored in plain text for simplicity (class project)
+        # Passwords stored in plain text for simplicity 
         c.executemany(
             "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
             [
-                ("admin_user",   "admin123",   "admin"),
-                ("cashier_user", "cashier123", "cashier"),
+                ("admin_user",   "SG$RmZsf8", "admin"),
+                ("cashier_user", "fy$NuaToG", "cashier"),
             ]
         )
 
