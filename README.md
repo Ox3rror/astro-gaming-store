@@ -1,7 +1,7 @@
 # Astro Gaming Store — Inventory Management System
 
-
 ## Tech Stack
+
 - **Backend:** Python · Flask
 - **Database:** SQLite (auto-created on first run)
 - **Frontend:** HTML · CSS · Bootstrap 5 · Chart.js
@@ -12,14 +12,18 @@
 ## Quick Start
 
 ### 1. Clone / Download
+
 ```bash
-git clone <your-repo-url>
+git clone <repo-url>
 cd astro_gaming
 ```
 
 ### 2. Create a virtual environment
+
 ```bash
-python3 -m venv venv
+python -m venv venv
+python3 -m venv venv (macos)
+
 
 # Windows
 venv\Scripts\activate
@@ -29,13 +33,17 @@ source venv/bin/activate
 ```
 
 ### 3. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 4. Run the app
+
 ```bash
 python app.py
+python3 app.py (macos)
+
 ```
 
 Open your browser at: **http://localhost:8000**
@@ -44,10 +52,10 @@ Open your browser at: **http://localhost:8000**
 
 ## Default Login Credentials
 
-| Role    | Username       | Password    |
-|---------|----------------|-------------|
-| Admin   | `admin_user`   | `admin123`  |
-| Cashier | `cashier_user` | `cashier123`|
+| Role    | Username | Password |
+| ------- | -------- | -------- |
+| Admin   | ``       | ``       |
+| Cashier | ``       | ``       |
 
 - **Admin** — full access (add, edit, delete products)
 - **Cashier** — read-only access (view inventory, alerts, dashboard)
@@ -80,14 +88,11 @@ astro_gaming/
 
 ## Features
 
-| Screen | Features |
-|--------|----------|
-| Login | Role-based auth (Admin / Cashier), dark/light mode |
-| Dashboard | Stat cards, recent sales, stock alert panel |
-| Inventory | Search, filter by platform/genre/status, pagination, CRUD |
-| Add/Edit | Form validation, reorder threshold warning, danger zone delete |
-| Alerts | Filter tabs (All/Out/Low), CSV export, Reorder buttons |
-| Reports | Colorful bar chart, top sellers table, CSV export |
-
----
-
+| Screen    | Features                                                       |
+| --------- | -------------------------------------------------------------- |
+| Login     | Role-based auth (Admin / Cashier), dark/light mode             |
+| Dashboard | Stat cards, recent sales, stock alert panel                    |
+| Inventory | Search, filter by platform/genre/status, pagination, CRUD      |
+| Add/Edit  | Form validation, reorder threshold warning, danger zone delete |
+| Alerts    | Filter tabs (All/Out/Low), CSV export, Reorder buttons         |
+| Reports   | Colorful bar chart, top sellers table, CSV export              |
