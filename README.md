@@ -46,10 +46,12 @@ python3 app.py (macos)
 
 ```
  **If you want to run locally , In app.py replace these lines at the end:**
-
+ 
+```bash
 if __name__ == "__main__":
     init_db()
     app.run(debug=True, port=8000)
+```
 
 Open your browser at: **http://localhost:8000**
 
