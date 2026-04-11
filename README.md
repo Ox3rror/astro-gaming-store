@@ -45,6 +45,11 @@ python app.py
 python3 app.py (macos)
 
 ```
+If you want to run locally , In app.py relace these lines at the end:
+
+if __name__ == "__main__":
+    init_db()
+    app.run(debug=True, port=8000)
 
 Open your browser at: **http://localhost:8000**
 
@@ -54,8 +59,8 @@ Open your browser at: **http://localhost:8000**
 
 | Role    | Username | Password |
 | ------- | -------- | -------- |
-| Admin   | ``       | ``       |
-| Cashier | ``       | ``       |
+| Admin   | admin_user |  SG$RmZsf8
+| Cashier | cashier_user| fy$NuaToG 
 
 - **Admin** — full access (add, edit, delete products)
 - **Cashier** — read-only access (view inventory, alerts, dashboard)
