@@ -45,7 +45,7 @@ python app.py
 python3 app.py (macos)
 
 ```
-If you want to run locally , In app.py relace these lines at the end:
+ **If you want to run locally , In app.py replace these lines at the end:**
 
 if __name__ == "__main__":
     init_db()
