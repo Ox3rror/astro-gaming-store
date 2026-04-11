@@ -1,4 +1,4 @@
-# Astro Gaming Store — Inventory Management System
+# Astro Gaming Store : Web based Inventory Management System
 
 ## Tech Stack
 
