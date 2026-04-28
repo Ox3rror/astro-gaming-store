@@ -73,16 +73,15 @@ a { text-decoration: none; }
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 16px 16px 12px;
+  justify-content: center;
+  padding: 12px 12px 10px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.brand-logo {
-  width: 32px; height: 32px;
-  background: linear-gradient(135deg, #2563EB, #4F46E5);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; color: #fff; flex-shrink: 0;
+.sidebar-logo {
+  width: 148px;
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 .brand-name { font-size: 14px; font-weight: 700; color: #fff; line-height: 1.2; }
 .brand-sub  { font-size: 10px; color: #90A4C0; }
@@ -607,3 +606,12 @@ a { text-decoration: none; }
   .sidebar-footer   { justify-content: center; padding: 10px 0; }
   .sf-logout, .sf-avatar { margin: 0; }
 }
+
+/* ── DARK MODE VISIBILITY FIXES ──────────────────────────── */
+[data-theme="dark"] .text-muted       { color: #94A3B8 !important; }
+[data-theme="dark"] .text-sub         { color: #8FA8C0 !important; }
+[data-theme="dark"] .data-table td    { color: var(--text); }
+[data-theme="dark"] .data-table th    { color: #94A3B8; }
+[data-theme="dark"] .pag-info         { color: #94A3B8; }
+[data-theme="dark"] .filter-select    { color: var(--text); background: var(--surface); }
+[data-theme="dark"] .search-input     { color: var(--text); background: var(--input-bg); }

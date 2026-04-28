@@ -9,31 +9,54 @@
 {% block content %}
 <div class="content-inner">
 
-  <!-- Controls -->
-  <div class="toolbar" style="margin-bottom:16px;">
-    <div style="display:flex;gap:8px;align-items:center;">
-      <select class="filter-select"><option>Report Type ▾</option><option>Sales Summary</option><option>Top Sellers</option></select>
-      <select class="filter-select"><option>Date Range ▾</option><option>Last 7 days</option><option>This month</option></select>
-      <select class="filter-select"><option>Platform ▾</option><option>PS5</option><option>Xbox</option><option>Switch</option><option>PC</option></select>
-      <button class="btn-primary-action">Generate</button>
+  <!-- Filter Controls -->
+  <form method="GET" action="{{ url_for('reports') }}">
+    <div class="toolbar" style="margin-bottom:16px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select name="report_type" class="filter-select">
+          <option value="">Report Type ▾</option>
+          <option value="sales"   {% if report_type=='sales'   %}selected{% endif %}>Sales Summary</option>
+          <option value="sellers" {% if report_type=='sellers' %}selected{% endif %}>Top Sellers</option>
+        </select>
+        <select name="date_range" class="filter-select">
+          <option value="month"      {% if date_range=='month'      %}selected{% endif %}>This Month (April)</option>
+          <option value="prev_month" {% if date_range=='prev_month' %}selected{% endif %}>Last Month (March)</option>
+          <option value="week"       {% if date_range=='week'       %}selected{% endif %}>Last 7 Days</option>
+          <option value="all"        {% if date_range=='all'        %}selected{% endif %}>All Time</option>
+        </select>
+        <select name="platform" class="filter-select">
+          <option value="">All Platforms</option>
+          {% for p in platforms %}
+          <option value="{{ p }}" {% if platform_filter==p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn-primary-action">Generate</button>
+        {% if report_type or date_range != 'month' or platform_filter %}
+          <a href="{{ url_for('reports') }}" class="btn-cancel" style="padding:6px 12px;">Reset</a>
+        {% endif %}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <a href="{{ url_for('export_reports_csv') }}" class="btn-secondary-action">
+          <i class="bi bi-filetype-csv me-1"></i> Export CSV
+        </a>
+        <button type="button" class="btn-outline-action" onclick="window.print()">
+          <i class="bi bi-filetype-pdf me-1"></i> Export PDF
+        </button>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;">
-      <a href="{{ url_for('export_reports_csv') }}" class="btn-secondary-action">
-        <i class="bi bi-filetype-csv me-1"></i> Export CSV
-      </a>
-      <button class="btn-outline-action" onclick="window.print()">
-        <i class="bi bi-filetype-pdf me-1"></i> Export PDF
-      </button>
-    </div>
-  </div>
+  </form>
 
-  <!-- Bar Chart -->
+  <!-- Revenue Chart -->
   <div class="chart-card" style="margin-bottom:16px;">
     <div class="chart-head">
-      <span class="panel-title">Daily Revenue — Mar 1–7</span>
+      <span class="panel-title">{{ chart_title }}</span>
     </div>
     <div class="chart-body">
-      <canvas id="revenueChart" height="90"></canvas>
+      {% if days %}
+        <canvas id="revenueChart" height="90"></canvas>
+      {% else %}
+        <div class="text-center text-muted py-4">No sales data for this filter.</div>
+      {% endif %}
     </div>
     <div class="chart-footer">
       <span class="text-green fw-600">Total: ${{ "%.2f"|format(total_revenue) }}</span>
@@ -41,10 +64,52 @@
     </div>
   </div>
 
-  <!-- Top Sellers -->
+  <!-- Platform Breakdown (Sales Summary mode) -->
+  {% if report_type == 'sales' or not report_type %}
+  <div class="table-card" style="margin-bottom:16px;">
+    <div class="panel-head">
+      <span class="panel-title">Platform Breakdown — {{ chart_title }}</span>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Platform</th>
+          <th class="text-center">Units Sold</th>
+          <th>Revenue</th>
+          <th>Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pb in platform_breakdown %}
+        <tr>
+          <td class="fw-600">{{ pb.platform }}</td>
+          <td class="text-center text-blue fw-600">{{ pb.units }}</td>
+          <td class="text-green fw-600">${{ "%.2f"|format(pb.revenue) }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="flex:1;background:var(--border-color);border-radius:4px;height:6px;">
+                <div style="width:{{ ((pb.revenue / total_revenue * 100) if total_revenue else 0)|round|int }}%;
+                             background:#2563EB;height:6px;border-radius:4px;"></div>
+              </div>
+              <span class="text-sub" style="min-width:36px;">
+                {{ "%.1f"|format((pb.revenue / total_revenue * 100) if total_revenue else 0) }}%
+              </span>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">No data.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="height:10px;"></div>
+  </div>
+  {% endif %}
+
+  <!-- Top Sellers Table -->
   <div class="table-card">
     <div class="panel-head">
-      <span class="panel-title">Top Sellers This Week</span>
+      <span class="panel-title">Top Sellers — {{ chart_title }}</span>
     </div>
     <table class="data-table">
       <thead>
@@ -57,17 +122,17 @@
         </tr>
       </thead>
       <tbody>
-        {% set medals = ['🥇','🥈','🥉','🏅','🎖️'] %}
+        {% set medals = ['🥇','🥈','🥉','🏅','🎖️','6','7','8','9','10'] %}
         {% for s in top_sellers %}
         <tr>
-          <td style="font-size:1.2rem;line-height:1;">{{ medals[loop.index0] if loop.index0 < 5 else loop.index }}</td>
+          <td style="font-size:1.1rem;line-height:1;">{{ medals[loop.index0] if loop.index0 < 5 else loop.index }}</td>
           <td class="fw-600">{{ s.title }}</td>
           <td class="text-sub">{{ s.platform }}</td>
           <td class="text-center text-blue fw-600">{{ s.units }}</td>
           <td class="text-green fw-600">${{ "%.2f"|format(s.revenue) }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="text-center text-muted py-4">No sales data available.</td></tr>
+        <tr><td colspan="5" class="text-center text-muted py-4">No sales data for this selection.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -78,19 +143,25 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{% if days %}
 <script>
 const days   = {{ days | tojson }};
 const totals = {{ totals | tojson }};
-const colors = ['#2563EB','#7C3AED','#DB2777','#0891B2','#16A34A','#D97706','#DC2626'];
-
+const palette = [
+  '#2563EB','#7C3AED','#DB2777','#0891B2','#16A34A','#D97706','#DC2626',
+  '#EA580C','#0D9488','#6D28D9','#BE185D','#1D4ED8','#15803D','#B45309',
+  '#0E7490','#9D174D','#065F46','#92400E','#1E3A5F','#C2410C',
+  '#0369A1','#166534','#7E22CE','#831843','#134E4A','#78350F',
+  '#1E1B4B','#881337','#14532D','#4338CA',
+];
 const ctx = document.getElementById('revenueChart').getContext('2d');
 new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: days.map((d, i) => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i] || d),
+    labels: days,
     datasets: [{
       data: totals,
-      backgroundColor: colors.slice(0, totals.length),
+      backgroundColor: palette.slice(0, totals.length),
       borderRadius: 4,
       borderSkipped: false,
     }]
@@ -99,26 +170,20 @@ new Chart(ctx, {
     responsive: true,
     plugins: {
       legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ' $' + ctx.parsed.y.toFixed(2)
-        }
-      }
+      tooltip: { callbacks: { label: c => ' $' + c.parsed.y.toFixed(2) } }
     },
     scales: {
       x: {
         grid: { display: false },
-        ticks: { font: { family: 'Inter', size: 11 }, color: '#8896A5' }
+        ticks: { font: { family:'Inter', size:10 }, color:'#8896A5', maxRotation:45 }
       },
       y: {
-        grid: { color: 'rgba(0,0,0,0.05)' },
-        ticks: {
-          font: { family: 'Inter', size: 11 }, color: '#8896A5',
-          callback: v => '$' + v
-        }
+        grid: { color:'rgba(128,128,128,0.1)' },
+        ticks: { font: { family:'Inter', size:11 }, color:'#8896A5', callback: v => '$'+v }
       }
     }
   }
 });
 </script>
+{% endif %}
 {% endblock %}

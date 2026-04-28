@@ -1,0 +1,18 @@
+{
+  "name": "Astro Gaming Store",
+  "short_name": "AstroGaming",
+  "description": "Inventory Management System for Astro Gaming Store",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0F1117",
+  "theme_color": "#2563EB",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

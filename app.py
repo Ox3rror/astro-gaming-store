@@ -1,17 +1,13 @@
 from flask import (Flask, render_template, request, redirect,
-                   url_for, session, flash, jsonify)
+                   url_for, session, flash, jsonify, Response)
+from flask_bcrypt import Bcrypt
 from database import get_db, init_db
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 app = Flask(__name__)
 app.secret_key = "astro-gaming-secret-2026"
-
-
-# ── BOOTSTRAP ─────────────────────────────────────────────────
-@app.before_request
-def ensure_db():
-    pass  # db initialised once at startup
+bcrypt = Bcrypt(app)
 
 
 def login_required(f):
@@ -38,14 +34,13 @@ def login():
         password = request.form.get("password", "")
         db = get_db()
         user = db.execute(
-            "SELECT * FROM users WHERE username = ? AND password = ?",
-            (username, password)
+            "SELECT * FROM users WHERE username = ?", (username,)
         ).fetchone()
         db.close()
-        if user:
-            session["user_id"]   = user["id"]
-            session["username"]  = user["username"]
-            session["role"]      = user["role"]
+        if user and bcrypt.check_password_hash(user["password"], password):
+            session["user_id"]  = user["id"]
+            session["username"] = user["username"]
+            session["role"]     = user["role"]
             return redirect(url_for("dashboard"))
         error = "Invalid username or password."
     return render_template("login.html", error=error)
@@ -64,53 +59,33 @@ def logout():
 @login_required
 def dashboard():
     db = get_db()
-
     total_products = db.execute("SELECT COUNT(*) FROM products").fetchone()[0]
-
-    # Count products at or below their threshold
     low_stock_count = db.execute(
         "SELECT COUNT(*) FROM products WHERE quantity <= reorder_threshold"
     ).fetchone()[0]
-
-    # Today's sales (count of transactions)
     today = datetime.now().strftime("%Y-%m-%d")
     todays_sales = db.execute(
         "SELECT COUNT(*) FROM sales WHERE sale_time LIKE ?", (today + "%",)
     ).fetchone()[0]
-
-    # Revenue = all sales total (for demo, last 7 days)
     revenue = db.execute(
         "SELECT COALESCE(SUM(sale_price * quantity), 0) FROM sales"
     ).fetchone()[0]
-
-    # Recent 5 sales
     recent_sales = db.execute("""
-        SELECT s.sale_price, s.sale_time, s.quantity,
-               p.title, p.platform
-        FROM sales s
-        JOIN products p ON p.id = s.product_id
-        ORDER BY s.sale_time DESC
-        LIMIT 5
+        SELECT s.sale_price, s.sale_time, s.quantity, p.title, p.platform
+        FROM sales s JOIN products p ON p.id = s.product_id
+        ORDER BY s.sale_time DESC LIMIT 5
     """).fetchall()
-
-    # Stock alerts (out of stock or low, max 6 shown)
     alerts = db.execute("""
         SELECT title, platform, quantity, reorder_threshold,
                CASE WHEN quantity = 0 THEN 'Out of Stock' ELSE 'Low Stock' END AS status
-        FROM products
-        WHERE quantity <= reorder_threshold
-        ORDER BY quantity ASC
-        LIMIT 6
+        FROM products WHERE quantity <= reorder_threshold
+        ORDER BY quantity ASC LIMIT 6
     """).fetchall()
-
     db.close()
     return render_template("dashboard.html",
-        total_products=total_products,
-        low_stock_count=low_stock_count,
-        todays_sales=todays_sales,
-        revenue=revenue,
-        recent_sales=recent_sales,
-        alerts=alerts
+        total_products=total_products, low_stock_count=low_stock_count,
+        todays_sales=todays_sales, revenue=revenue,
+        recent_sales=recent_sales, alerts=alerts
     )
 
 
@@ -130,7 +105,6 @@ def inventory():
 
     query  = "SELECT * FROM products WHERE 1=1"
     params = []
-
     if search:
         query += " AND (title LIKE ? OR sku LIKE ? OR platform LIKE ?)"
         params += [f"%{search}%", f"%{search}%", f"%{search}%"]
@@ -158,10 +132,8 @@ def inventory():
     total_pages = (total + per_page - 1) // per_page
     return render_template("inventory.html",
         products=products, total=total,
-        page=page, total_pages=total_pages,
-        per_page=per_page,
-        search=search, platform=platform,
-        genre=genre, status=status,
+        page=page, total_pages=total_pages, per_page=per_page,
+        search=search, platform=platform, genre=genre, status=status,
         platforms=platforms, genres=genres
     )
 
@@ -176,9 +148,8 @@ def add_item():
         db = get_db()
         try:
             db.execute("""
-                INSERT INTO products (sku, title, platform, genre, category,
-                                      quantity, price, reorder_threshold)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO products (sku,title,platform,genre,category,quantity,price,reorder_threshold)
+                VALUES (?,?,?,?,?,?,?,?)
             """, (
                 request.form["sku"].strip().upper(),
                 request.form["title"].strip(),
@@ -214,9 +185,8 @@ def edit_item(item_id):
     if request.method == "POST":
         try:
             db.execute("""
-                UPDATE products SET
-                    sku=?, title=?, platform=?, genre=?, category=?,
-                    quantity=?, price=?, reorder_threshold=?
+                UPDATE products SET sku=?,title=?,platform=?,genre=?,category=?,
+                                    quantity=?,price=?,reorder_threshold=?
                 WHERE id=?
             """, (
                 request.form["sku"].strip().upper(),
@@ -231,7 +201,6 @@ def edit_item(item_id):
             ))
             db.commit()
             flash("Product updated successfully.", "success")
-            return redirect(url_for("inventory"))
         except Exception as e:
             flash(f"Error: {e}", "danger")
         finally:
@@ -248,7 +217,6 @@ def delete_item(item_id):
         flash("Admin access required.", "danger")
         return redirect(url_for("inventory"))
     db = get_db()
-    # Delete related sales records first to avoid FK constraint error
     db.execute("DELETE FROM sales WHERE product_id = ?", (item_id,))
     db.execute("DELETE FROM products WHERE id = ?", (item_id,))
     db.commit()
@@ -265,24 +233,17 @@ def delete_item(item_id):
 def alerts():
     db  = get_db()
     tab = request.args.get("tab", "all")
-
-    base  = "SELECT * FROM products WHERE quantity <= reorder_threshold"
+    base = "SELECT * FROM products WHERE quantity <= reorder_threshold"
     if tab == "out":
         query = base + " AND quantity = 0 ORDER BY title"
     elif tab == "low":
         query = base + " AND quantity > 0 ORDER BY quantity ASC"
     else:
         query = base + " ORDER BY quantity ASC"
-
-    items      = db.execute(query).fetchall()
-    all_count  = db.execute(base).fetchone()
-    out_count  = db.execute(base + " AND quantity = 0").fetchone()
-    low_count  = db.execute(base + " AND quantity > 0").fetchone()
-
-    all_count  = db.execute("SELECT COUNT(*) FROM products WHERE quantity <= reorder_threshold").fetchone()[0]
-    out_count  = db.execute("SELECT COUNT(*) FROM products WHERE quantity = 0").fetchone()[0]
-    low_count  = db.execute("SELECT COUNT(*) FROM products WHERE quantity > 0 AND quantity <= reorder_threshold").fetchone()[0]
-
+    items     = db.execute(query).fetchall()
+    all_count = db.execute("SELECT COUNT(*) FROM products WHERE quantity <= reorder_threshold").fetchone()[0]
+    out_count = db.execute("SELECT COUNT(*) FROM products WHERE quantity = 0").fetchone()[0]
+    low_count = db.execute("SELECT COUNT(*) FROM products WHERE quantity > 0 AND quantity <= reorder_threshold").fetchone()[0]
     db.close()
     return render_template("alerts.html",
         items=items, tab=tab,
@@ -291,95 +252,150 @@ def alerts():
 
 
 # ══════════════════════════════════════════════════════════════
-# REPORTS
+# REPORTS  — parameterised queries, all filters working
 # ══════════════════════════════════════════════════════════════
 @app.route("/reports")
 @login_required
 def reports():
     db = get_db()
 
-    # Daily revenue for the last 7 days (Mar 1-7)
-    daily = db.execute("""
-        SELECT DATE(sale_time) as day,
-               COALESCE(SUM(sale_price * quantity), 0) as total
-        FROM sales
-        GROUP BY DATE(sale_time)
+    report_type     = request.args.get("report_type", "")
+    date_range      = request.args.get("date_range", "month")
+    platform_filter = request.args.get("platform", "")
+
+    # ── Date bounds ───────────────────────────────────────────
+    params_base = []   # parameters shared across queries
+    date_where  = ""
+
+    if date_range == "week":
+        cutoff = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+        date_where = "AND DATE(s.sale_time) >= ?"
+        params_base.append(cutoff)
+        chart_title = "Daily Revenue — Last 7 Days"
+    elif date_range == "month":
+        date_where = "AND strftime('%Y-%m', s.sale_time) = ?"
+        params_base.append("2026-04")
+        chart_title = "Daily Revenue — April 2026"
+    elif date_range == "prev_month":
+        date_where = "AND strftime('%Y-%m', s.sale_time) = ?"
+        params_base.append("2026-03")
+        chart_title = "Daily Revenue — March 2026"
+    else:  # all
+        date_where = ""
+        chart_title = "Daily Revenue — All Time"
+
+    # ── Platform filter ───────────────────────────────────────
+    plat_where  = ""
+    plat_params = []
+    if platform_filter:
+        plat_where  = "AND p.platform = ?"
+        plat_params = [platform_filter]
+
+    def q_params(*extra):
+        return params_base + plat_params + list(extra)
+
+    # ── Daily revenue ─────────────────────────────────────────
+    daily = db.execute(f"""
+        SELECT DATE(s.sale_time) as day,
+               COALESCE(SUM(s.sale_price * s.quantity), 0) as total
+        FROM sales s JOIN products p ON p.id = s.product_id
+        WHERE 1=1 {date_where} {plat_where}
+        GROUP BY DATE(s.sale_time)
         ORDER BY day
-        LIMIT 7
-    """).fetchall()
+    """, q_params()).fetchall()
 
-    # Top sellers by units sold
-    top_sellers = db.execute("""
+    # ── Top sellers ───────────────────────────────────────────
+    top_limit = 10 if report_type == "sellers" else 5
+    top_sellers = db.execute(f"""
         SELECT p.title, p.platform,
-               SUM(s.quantity) as units,
-               SUM(s.sale_price * s.quantity) as revenue
-        FROM sales s
-        JOIN products p ON p.id = s.product_id
+               SUM(s.quantity)              as units,
+               SUM(s.sale_price*s.quantity) as revenue
+        FROM sales s JOIN products p ON p.id = s.product_id
+        WHERE 1=1 {date_where} {plat_where}
         GROUP BY p.id
-        ORDER BY units DESC
-        LIMIT 5
-    """).fetchall()
+        ORDER BY revenue DESC
+        LIMIT {top_limit}
+    """, q_params()).fetchall()
 
-    total_revenue = db.execute("SELECT COALESCE(SUM(sale_price * quantity),0) FROM sales").fetchone()[0]
+    # ── Totals ────────────────────────────────────────────────
+    total_revenue = db.execute(f"""
+        SELECT COALESCE(SUM(s.sale_price * s.quantity), 0)
+        FROM sales s JOIN products p ON p.id = s.product_id
+        WHERE 1=1 {date_where} {plat_where}
+    """, q_params()).fetchone()[0]
+
+    # ── Platform-by-revenue breakdown (for sales summary) ────
+    platform_breakdown = db.execute(f"""
+        SELECT p.platform,
+               SUM(s.sale_price * s.quantity) as revenue,
+               SUM(s.quantity)                as units
+        FROM sales s JOIN products p ON p.id = s.product_id
+        WHERE 1=1 {date_where} {plat_where}
+        GROUP BY p.platform
+        ORDER BY revenue DESC
+    """, q_params()).fetchall()
+
+    platforms = [r[0] for r in db.execute(
+        "SELECT DISTINCT platform FROM products ORDER BY platform"
+    ).fetchall()]
     db.close()
 
-    days   = [r["day"]   for r in daily]
-    totals = [round(r["total"], 2) for r in daily]
-    avg    = round(total_revenue / max(len(daily), 1), 2)
+    days_list   = [r["day"]   for r in daily]
+    totals_list = [round(r["total"], 2) for r in daily]
+    avg = round(total_revenue / max(len(daily), 1), 2)
 
     return render_template("reports.html",
-        days=days, totals=totals,
+        days=days_list, totals=totals_list,
         top_sellers=top_sellers,
+        platform_breakdown=platform_breakdown,
         total_revenue=total_revenue,
-        avg_per_day=avg
+        avg_per_day=avg,
+        chart_title=chart_title,
+        report_type=report_type,
+        date_range=date_range,
+        platform_filter=platform_filter,
+        platforms=platforms,
     )
 
 
 # ══════════════════════════════════════════════════════════════
-# API — export CSV (simple inline)
+# CSV EXPORTS
 # ══════════════════════════════════════════════════════════════
 @app.route("/api/export/alerts")
 @login_required
 def export_alerts_csv():
-    from flask import Response
     db = get_db()
     rows = db.execute(
-        "SELECT sku, title, platform, quantity, reorder_threshold FROM products WHERE quantity <= reorder_threshold ORDER BY quantity"
+        "SELECT sku,title,platform,quantity,reorder_threshold FROM products "
+        "WHERE quantity <= reorder_threshold ORDER BY quantity"
     ).fetchall()
     db.close()
     lines = ["SKU,Title,Platform,Qty,Threshold"]
     for r in rows:
         lines.append(f"{r['sku']},{r['title']},{r['platform']},{r['quantity']},{r['reorder_threshold']}")
     return Response("\n".join(lines), mimetype="text/csv",
-                    headers={"Content-Disposition": "attachment;filename=low_stock_alerts.csv"})
+                    headers={"Content-Disposition":"attachment;filename=low_stock_alerts.csv"})
 
 
 @app.route("/api/export/reports")
 @login_required
 def export_reports_csv():
-    from flask import Response
     db = get_db()
     rows = db.execute("""
         SELECT p.title, p.platform, SUM(s.quantity) as units,
                SUM(s.sale_price*s.quantity) as revenue
         FROM sales s JOIN products p ON p.id=s.product_id
-        GROUP BY p.id ORDER BY units DESC
+        GROUP BY p.id ORDER BY revenue DESC
     """).fetchall()
     db.close()
     lines = ["Rank,Title,Platform,Units,Revenue"]
     for i, r in enumerate(rows, 1):
         lines.append(f"{i},{r['title']},{r['platform']},{r['units']},{r['revenue']:.2f}")
     return Response("\n".join(lines), mimetype="text/csv",
-                    headers={"Content-Disposition": "attachment;filename=top_sellers.csv"})
+                    headers={"Content-Disposition":"attachment;filename=top_sellers.csv"})
 
 
 # ══════════════════════════════════════════════════════════════
-import os
-
 if __name__ == "__main__":
     init_db()
-    app.run(
-        debug=False,
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8000))
-    )
+    app.run(debug=True, port=8000)
